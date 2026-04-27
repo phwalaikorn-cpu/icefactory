@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0F6E56">
+<title>โรงน้ำแข็ง</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Sukhumvit Set", "Prompt", sans-serif; background: #f5f4ef; color: #2c2c2a; font-size: 16px; -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+button { font: inherit; cursor: pointer; }
+input { font: inherit; }
+
+.screen { display: none; min-height: 100vh; flex-direction: column; padding-bottom: 70px; padding-top: env(safe-area-inset-top); }
+.screen.active { display: flex; }
+.header { padding: 16px 18px 14px; border-bottom: 1px solid #e8e6df; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+.header h1 { font-size: 18px; font-weight: 500; }
+.header .time { font-size: 13px; color: #888780; }
+.header .back { background: none; border: none; padding: 6px 8px 6px 0; font-size: 22px; color: #2c2c2a; line-height: 1; }
+.body { flex: 1; padding: 14px; }
+
+.nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: #fff; border-top: 1px solid #e8e6df; height: 60px; z-index: 10; padding-bottom: env(safe-area-inset-bottom); }
+.nav button { flex: 1; background: none; border: none; font-size: 13px; color: #888780; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.nav button.active { color: #2c2c2a; font-weight: 500; }
+.nav button .nav-icon { font-size: 18px; }
+
+.card { background: #fff; border: 1px solid #e8e6df; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+.card.open { border-color: #5DCAA5; background: #f0faf5; }
+.card.warn { border-color: #EF9F27; background: #fef8ec; }
+.card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.card-name { font-size: 16px; font-weight: 500; }
+.card-dot { width: 10px; height: 10px; border-radius: 50%; background: #b4b2a9; }
+.card.open .card-dot { background: #1D9E75; }
+.card.warn .card-dot { background: #BA7517; }
+.card-status { font-size: 14px; color: #5F5E5A; margin-bottom: 4px; }
+.card-status.muted { color: #888780; }
+.card-detail { font-size: 13px; color: #5F5E5A; }
+.card-warn-text { font-size: 13px; color: #BA7517; font-weight: 500; margin-top: 4px; }
+.card-btn { width: 100%; margin-top: 12px; padding: 13px; border-radius: 8px; border: none; font-size: 15px; font-weight: 500; }
+.btn-start { background: #1D9E75; color: #fff; }
+.btn-start:active { background: #0F6E56; }
+.btn-stop { background: #E24B4A; color: #fff; }
+.btn-stop:active { background: #A32D2D; }
+.btn-measure { background: #185FA5; color: #fff; }
+.btn-measure:active { background: #0C447C; }
+.card-badge { font-size: 11px; padding: 3px 9px; border-radius: 11px; background: #E6F1FB; color: #185FA5; font-weight: 500; }
+.measurement-row { display: flex; align-items: baseline; gap: 6px; font-size: 14px; color: #5F5E5A; margin-bottom: 4px; }
+.measurement-row .val { font-size: 18px; font-weight: 500; color: #185FA5; }
+.measurement-row .unit { font-size: 13px; color: #888780; }
+.measurement-row .time { font-size: 12px; color: #888780; margin-left: auto; }
+
+.list-section { font-size: 12px; color: #888780; padding: 18px 4px 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.list { background: #fff; border: 1px solid #e8e6df; border-radius: 12px; overflow: hidden; }
+.list-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f1efe8; cursor: pointer; }
+.list-item:last-child { border-bottom: none; }
+.list-item:active { background: #f5f4ef; }
+.list-label { font-size: 15px; }
+.list-value { font-size: 13px; color: #888780; display: flex; align-items: center; gap: 6px; }
+.list-chev { color: #b4b2a9; font-size: 14px; }
+
+.form-group { margin-bottom: 22px; }
+.form-label { display: block; font-size: 13px; color: #5F5E5A; margin-bottom: 6px; }
+.form-input { width: 100%; padding: 12px 14px; font-size: 16px; border: 1px solid #d3d1c7; border-radius: 8px; background: #fff; }
+.form-input:focus { outline: none; border-color: #378ADD; }
+.form-hint { font-size: 13px; color: #888780; margin-top: 6px; }
+.form-link { font-size: 13px; color: #185FA5; margin-top: 4px; cursor: pointer; display: inline-block; padding: 4px 0; }
+.form-link:active { color: #0C447C; }
+.btn-primary { width: 100%; padding: 14px; background: #2c2c2a; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; }
+.btn-primary:active { background: #444441; }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 100; }
+.modal-bg.show { display: flex; }
+.modal { width: 100%; background: #fff; border-radius: 16px 16px 0 0; padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); animation: slideUp 0.2s ease-out; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal h2 { font-size: 18px; font-weight: 500; margin-bottom: 6px; }
+.modal p { font-size: 14px; color: #5F5E5A; margin-bottom: 18px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+.modal-actions button { flex: 1; padding: 13px; border-radius: 8px; border: none; font-size: 15px; font-weight: 500; }
+.btn-cancel { background: #f1efe8; color: #2c2c2a; }
+.btn-cancel:active { background: #d3d1c7; }
+.btn-confirm { background: #2c2c2a; color: #fff; }
+.btn-confirm:active { background: #444441; }
+.btn-confirm-danger { background: #E24B4A; color: #fff; }
+.btn-confirm-danger:active { background: #A32D2D; }
+
+.summary-box { background: #f0faf5; border: 1px solid #5DCAA5; border-radius: 8px; padding: 14px; margin-bottom: 16px; }
+.summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+.summary-row .label { color: #5F5E5A; }
+.summary-row .value { font-weight: 500; }
+
+.loading { position: fixed; inset: 0; background: rgba(0,0,0,0.3); display: none; align-items: center; justify-content: center; z-index: 200; }
+.loading.show { display: flex; }
+.spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast { position: fixed; top: calc(70px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); background: #2c2c2a; color: #fff; padding: 10px 18px; border-radius: 24px; font-size: 14px; z-index: 300; opacity: 0; transition: opacity 0.2s, top 0.2s; pointer-events: none; max-width: 90%; }
+.toast.show { opacity: 1; top: calc(80px + env(safe-area-inset-top)); }
+.toast.error { background: #A32D2D; }
+.toast.success { background: #0F6E56; }
+
+.empty { text-align: center; padding: 40px 20px; color: #888780; font-size: 14px; }
+
+/* Splash on first load */
+.splash { position: fixed; inset: 0; background: #0F6E56; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 9999; }
+.splash.fade-out { opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.splash .icon { font-size: 64px; }
+.splash .name { font-size: 22px; font-weight: 500; }
+.splash .sub { font-size: 14px; opacity: 0.7; }
+
+/* Offline banner */
+.offline-banner { display: none; background: #BA7517; color: #fff; text-align: center; padding: 6px; font-size: 12px; }
+.offline-banner.show { display: block; }
+
+/* Connection error state */
+.error-state { padding: 40px 20px; text-align: center; }
+.error-state .icon { font-size: 48px; margin-bottom: 12px; }
+.error-state .msg { color: #5F5E5A; margin-bottom: 16px; }
+.error-state button { padding: 10px 20px; background: #2c2c2a; color: #fff; border: none; border-radius: 8px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <div class="icon">🧊</div>
+  <div class="name">โรงน้ำแข็ง</div>
+  <div class="sub">กำลังเชื่อมต่อ...</div>
+</div>
+
+<div class="offline-banner" id="offline-banner">⚠️ ไม่มีอินเทอร์เน็ต</div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="header">
+    <h1>โรงน้ำแข็ง</h1>
+    <span class="time" id="current-time">--:--</span>
+  </div>
+  <div class="body">
+    <div id="machine-cards"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div id="screen-settings" class="screen">
+  <div class="header"><h1>ตั้งค่า</h1></div>
+  <div class="body">
+    <div class="list-section">เครื่อง</div>
+    <div class="list" id="settings-machines"></div>
+    <div class="list-section">ทั่วไป</div>
+    <div class="list">
+      <div class="list-item">
+        <span class="list-label">น้ำหนัก/ถุง</span>
+        <span class="list-value">20 กก.</span>
+      </div>
+      <div class="list-item">
+        <span class="list-label">ผู้ใช้</span>
+        <span class="list-value">1 คน</span>
+      </div>
+      <div class="list-item">
+        <span class="list-label">เวอร์ชัน</span>
+        <span class="list-value" id="version-text">PWA 1.0</span>
+      </div>
+    </div>
+    <p style="text-align: center; font-size: 12px; color: #888780; margin-top: 24px;">
+      ตั้งค่าอื่น เช่น น้ำหนักถุง ผู้ใช้ อะไหล่ <br>แก้ใน Google Sheet ได้ครับ
+    </p>
+  </div>
+</div>
+
+<!-- EDIT -->
+<div id="screen-edit" class="screen">
+  <div class="header">
+    <button class="back" onclick="showScreen('settings')">‹</button>
+    <h1 id="edit-title">เครื่อง</h1>
+    <span></span>
+  </div>
+  <div class="body" id="edit-body"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="nav" id="nav-bar">
+  <button class="active" data-screen="home" onclick="showScreen('home')">
+    <span class="nav-icon">🏭</span>
+    <span>หน้าหลัก</span>
+  </button>
+  <button data-screen="settings" onclick="showScreen('settings')">
+    <span class="nav-icon">⚙️</span>
+    <span>ตั้งค่า</span>
+  </button>
+</nav>
+
+<!-- MODALS -->
+<div class="modal-bg" id="modal-confirm">
+  <div class="modal">
+    <h2 id="confirm-title">ยืนยัน?</h2>
+    <p id="confirm-text"></p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('modal-confirm')">ยกเลิก</button>
+      <button class="btn-confirm" id="confirm-ok">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-temp">
+  <div class="modal">
+    <h2 id="temp-title">ใส่อุณหภูมิ</h2>
+    <p id="temp-text">กรอกอุณหภูมิ (°C)</p>
+    <div class="form-group" style="margin-bottom: 12px;">
+      <input type="number" step="0.1" id="temp-input" class="form-input" placeholder="เช่น 0 หรือ -6" inputmode="decimal" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('modal-temp')">ยกเลิก</button>
+      <button class="btn-confirm" id="temp-ok">ตกลง</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-tds">
+  <div class="modal">
+    <h2 id="tds-title">บันทึกค่า TDS</h2>
+    <p id="tds-machine"></p>
+    <div class="form-group" style="margin-bottom: 12px;">
+      <label class="form-label">ค่า TDS (ppm)</label>
+      <input type="number" step="0.1" id="tds-input" class="form-input" placeholder="เช่น 12" inputmode="decimal" />
+    </div>
+    <div class="form-group" style="margin-bottom: 12px;">
+      <label class="form-label">หมายเหตุ (ไม่บังคับ)</label>
+      <input type="text" id="tds-notes" class="form-input" placeholder="เช่น เช้า, เย็น, หลังล้างกรอง" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideModal('modal-tds')">ยกเลิก</button>
+      <button class="btn-confirm" id="tds-ok">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-summary">
+  <div class="modal">
+    <h2>✅ ปิดเครื่องแล้ว</h2>
+    <p id="summary-machine"></p>
+    <div class="summary-box" id="summary-content"></div>
+    <div class="modal-actions">
+      <button class="btn-confirm" onclick="hideModal('modal-summary')">เรียบร้อย</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loading"><div class="spinner"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="config.js"></script>
+<script>
+// ============================================================
+// CONFIG — มาจาก config.js (window.API_URL)
+// ============================================================
+if (!window.API_URL) {
+  document.getElementById('splash').innerHTML =
+    '<div class="icon">⚠️</div>' +
+    '<div class="name">ยังไม่ได้ตั้งค่า API URL</div>' +
+    '<div class="sub">แก้ไขในไฟล์ config.js</div>';
+  throw new Error('Missing API_URL in config.js');
+}
+
+const state = {
+  machines: [],
+  bagWeightKg: 20,
+  forgotCloseAlertHours: 15,
+  serverNow: null,
+  serverNowFetchedAt: null,
+  pendingAction: null,
+  pendingMeasurement: null,
+  online: navigator.onLine,
+  lastSyncTime: null
+};
+
+// ============================================================
+// API — fetch() แทน google.script.run
+// ============================================================
+async function call(action, ...args) {
+  if (!navigator.onLine) throw new Error('offline');
+
+  // Apps Script ไม่รองรับ CORS preflight — ใช้ form-urlencoded เพื่อให้เป็น "simple request"
+  const formData = new URLSearchParams();
+  formData.append('payload', JSON.stringify({ action, args }));
+
+  const res = await fetch(window.API_URL, {
+    method: 'POST',
+    body: formData,
+    redirect: 'follow',
+    mode: 'cors'
+  });
+
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return await res.json();
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showLoading(b) { document.getElementById('loading').classList.toggle('show', b); }
+
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function hideModal(id) { document.getElementById(id).classList.remove('show'); }
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b => {
+    const target = b.dataset.screen;
+    b.classList.toggle('active', target === name || (name === 'edit' && target === 'settings'));
+  });
+  document.getElementById('nav-bar').style.display = name === 'edit' ? 'none' : 'flex';
+  if (name === 'home') refreshStatus();
+  if (name === 'settings') renderSettings();
+  window.scrollTo(0, 0);
+}
+
+// ============================================================
+// FORMAT HELPERS
+// ============================================================
+function getNow() {
+  if (!state.serverNow) return new Date();
+  return new Date(state.serverNow.getTime() + (Date.now() - state.serverNowFetchedAt));
+}
+function fmtTime(d) {
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function fmtDate(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + ' ' + fmtTime(d);
+}
+function fmtDuration(ms) {
+  if (ms < 0) ms = 0;
+  const totalMin = Math.floor(ms / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return m + ' นาที';
+  return h + ' ชม. ' + m + ' นาที';
+}
+function fmtNumber(n) { return new Intl.NumberFormat('th-TH').format(Math.round(n)); }
+
+// ============================================================
+// HOME SCREEN
+// ============================================================
+async function refreshStatus() {
+  try {
+    const data = await call('api_getStatus');
+    state.machines = data.machines;
+    state.bagWeightKg = data.bagWeightKg;
+    state.forgotCloseAlertHours = data.forgotCloseAlertHours;
+    state.serverNow = new Date(data.serverNowIso);
+    state.serverNowFetchedAt = Date.now();
+    state.lastSyncTime = Date.now();
+
+    // cache สำหรับโหมด offline
+    try {
+      localStorage.setItem('cache_status', JSON.stringify({
+        time: Date.now(),
+        data
+      }));
+    } catch (e) {}
+
+    renderHome();
+    hideSplash();
+    return true;
+  } catch (e) {
+    console.error('refreshStatus error:', e);
+
+    // ลอง load จาก cache
+    if (state.machines.length === 0) {
+      try {
+        const cached = JSON.parse(localStorage.getItem('cache_status') || 'null');
+        if (cached && cached.data) {
+          state.machines = cached.data.machines;
+          state.bagWeightKg = cached.data.bagWeightKg;
+          state.forgotCloseAlertHours = cached.data.forgotCloseAlertHours;
+          renderHome();
+          hideSplash();
+          toast('ใช้ข้อมูลแคชล่าสุด — ตรวจสอบเน็ต', 'error');
+          return false;
+        }
+      } catch (e) {}
+    }
+
+    if (state.machines.length === 0) renderConnectionError();
+    else toast('ซิงค์ไม่สำเร็จ', 'error');
+    hideSplash();
+    return false;
+  }
+}
+
+function hideSplash() {
+  const sp = document.getElementById('splash');
+  sp.classList.add('fade-out');
+  setTimeout(() => sp.style.display = 'none', 300);
+}
+
+function renderConnectionError() {
+  document.getElementById('machine-cards').innerHTML = `
+    <div class="error-state">
+      <div class="icon">📡</div>
+      <div class="msg">เชื่อมต่อไม่สำเร็จ<br>ตรวจสอบอินเทอร์เน็ต<br>หรือลิงก์ใน config.js</div>
+      <button onclick="refreshStatus()">ลองใหม่</button>
+    </div>
+  `;
+}
+
+function renderHome() {
+  document.getElementById('current-time').textContent = fmtTime(getNow());
+  const container = document.getElementById('machine-cards');
+  if (state.machines.length === 0) {
+    container.innerHTML = '<div class="empty">ไม่มีเครื่อง<br>(ตรวจ tab machines)</div>';
+    return;
+  }
+  container.innerHTML = state.machines.map(m => renderCard(m)).join('');
+}
+
+function renderCard(m) {
+  if (m.type === 'ro') return renderRoCard(m);
+  if (!m.isOpen) {
+    return `
+      <div class="card">
+        <div class="card-head">
+          <span class="card-name">${m.name}</span>
+          <span class="card-dot"></span>
+        </div>
+        <div class="card-status muted">ปิดอยู่</div>
+        <button class="card-btn btn-start" onclick="onStartClick('${m.id}')">
+          เปิดเครื่อง${m.type === 'pond' ? ' (ใส่อุณหภูมิ)' : ''}
+        </button>
+      </div>
+    `;
+  }
+  const startTime = new Date(m.session.startTimeIso);
+  const elapsed = getNow() - startTime;
+  const elapsedHours = elapsed / (1000 * 60 * 60);
+  const isWarn = elapsedHours > state.forgotCloseAlertHours;
+  let detailHtml = '';
+  if (m.type === 'tray' && m.minutesPerRound && m.bagsPerRound) {
+    const elapsedMin = elapsed / 60000;
+    const rounds = Math.floor(elapsedMin / m.minutesPerRound);
+    const bags = rounds * m.bagsPerRound;
+    detailHtml = `<div class="card-detail">~${rounds} เที่ยว · ~${fmtNumber(bags)} ถุง</div>`;
+  } else if (m.type === 'pond') {
+    detailHtml = `<div class="card-detail">เปิด ${fmtTime(startTime)}` +
+                 (m.session.tempStart !== null ? ` · ${m.session.tempStart}°C` : '') + `</div>`;
+  }
+  const warnHtml = isWarn ? `<div class="card-warn-text">⚠️ เปิดมาเกิน ${state.forgotCloseAlertHours} ชม.</div>` : '';
+  return `
+    <div class="card open ${isWarn ? 'warn' : ''}">
+      <div class="card-head">
+        <span class="card-name">${m.name}</span>
+        <span class="card-dot"></span>
+      </div>
+      <div class="card-status">เปิดมา ${fmtDuration(elapsed)}</div>
+      ${detailHtml}
+      ${warnHtml}
+      <button class="card-btn btn-stop" onclick="onStopClick('${m.id}', '${m.session.id}')">
+        ปิดเครื่อง${m.type === 'pond' ? ' (ใส่อุณหภูมิ)' : ''}
+      </button>
+    </div>
+  `;
+}
+
+function renderRoCard(m) {
+  let middleHtml;
+  if (m.lastMeasurement) {
+    const lastTime = new Date(m.lastMeasurement.timeIso);
+    const isToday = (new Date().toDateString() === lastTime.toDateString());
+    const timeLabel = isToday ? fmtTime(lastTime) : fmtDate(lastTime);
+    const todayCount = m.measurementsToday || 0;
+    const notes = m.lastMeasurement.notes ? ` · ${m.lastMeasurement.notes}` : '';
+    middleHtml = `
+      <div class="measurement-row">
+        <span class="val">${m.lastMeasurement.value}</span>
+        <span class="unit">${m.lastMeasurement.unit || 'ppm'}</span>
+        <span class="time">${timeLabel}${notes}</span>
+      </div>
+      <div class="card-detail">วันนี้บันทึกแล้ว ${todayCount} ครั้ง</div>
+    `;
+  } else {
+    middleHtml = `<div class="card-status muted">ยังไม่ได้บันทึก TDS วันนี้</div>`;
+  }
+  return `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-name">${m.name}</span>
+        <span class="card-badge">อัตโนมัติ</span>
+      </div>
+      ${middleHtml}
+      <button class="card-btn btn-measure" onclick="onMeasureTds('${m.id}')">
+        📊 บันทึก TDS
+      </button>
+    </div>
+  `;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function onMeasureTds(machineId) {
+  const m = state.machines.find(x => x.id === machineId);
+  if (!m) return;
+  document.getElementById('tds-machine').textContent = m.name;
+  document.getElementById('tds-input').value = '';
+  document.getElementById('tds-notes').value = '';
+  state.pendingMeasurement = { machineId, metric: 'TDS', unit: 'ppm' };
+  showModal('modal-tds');
+  setTimeout(() => document.getElementById('tds-input').focus(), 100);
+}
+
+document.getElementById('tds-ok').onclick = async function() {
+  const valStr = document.getElementById('tds-input').value.trim();
+  if (valStr === '') { document.getElementById('tds-input').focus(); toast('กรอกค่า TDS', 'error'); return; }
+  const val = Number(valStr);
+  if (isNaN(val)) { toast('ค่าไม่ถูกต้อง', 'error'); return; }
+  const notes = document.getElementById('tds-notes').value.trim();
+  hideModal('modal-tds');
+  const action = state.pendingMeasurement;
+  state.pendingMeasurement = null;
+  if (!action) return;
+
+  showLoading(true);
+  try {
+    const result = await call('api_logMeasurement', action.machineId, action.metric, val, action.unit, notes);
+    if (result.success) {
+      toast(`✓ บันทึก ${val} ${action.unit} แล้ว`, 'success');
+      await refreshStatus();
+    } else { toast(result.error || 'บันทึกไม่สำเร็จ', 'error'); }
+  } catch (e) { toast('เชื่อมต่อไม่ได้', 'error'); }
+  finally { showLoading(false); }
+};
+
+function onStartClick(machineId) {
+  const m = state.machines.find(x => x.id === machineId);
+  if (!m) return;
+  if (m.type === 'pond') {
+    document.getElementById('temp-title').textContent = 'เปิดเครื่อง ' + m.name;
+    document.getElementById('temp-text').textContent = 'อุณหภูมิตอนเปิดเครื่อง (°C)';
+    document.getElementById('temp-input').value = '';
+    state.pendingAction = { type: 'start', machineId };
+    showModal('modal-temp');
+    setTimeout(() => document.getElementById('temp-input').focus(), 100);
+  } else {
+    confirmAction('เปิด ' + m.name, 'จะเริ่มบันทึกตอนนี้', () => doStart(machineId, null));
+  }
+}
+
+function onStopClick(machineId, sessionId) {
+  const m = state.machines.find(x => x.id === machineId);
+  if (!m) return;
+  if (m.type === 'pond') {
+    document.getElementById('temp-title').textContent = 'ปิดเครื่อง ' + m.name;
+    document.getElementById('temp-text').textContent = 'อุณหภูมิตอนปิดเครื่อง (°C)';
+    document.getElementById('temp-input').value = '';
+    state.pendingAction = { type: 'stop', machineId, sessionId };
+    showModal('modal-temp');
+    setTimeout(() => document.getElementById('temp-input').focus(), 100);
+  } else {
+    confirmAction('ปิด ' + m.name, 'ระบบจะคำนวณเที่ยว/จำนวนถุงให้อัตโนมัติ',
+      () => doStop(sessionId, null), true);
+  }
+}
+
+function confirmAction(title, text, onOk, isDanger = false) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent = text;
+  const btn = document.getElementById('confirm-ok');
+  btn.className = isDanger ? 'btn-confirm-danger' : 'btn-confirm';
+  btn.textContent = 'ยืนยัน';
+  btn.onclick = () => { hideModal('modal-confirm'); onOk(); };
+  showModal('modal-confirm');
+}
+
+document.getElementById('temp-ok').onclick = function() {
+  const input = document.getElementById('temp-input');
+  const val = input.value.trim();
+  if (val === '') { input.focus(); toast('กรอกอุณหภูมิ', 'error'); return; }
+  const tempNum = Number(val);
+  if (isNaN(tempNum)) { toast('อุณหภูมิไม่ถูกต้อง', 'error'); return; }
+  hideModal('modal-temp');
+  const action = state.pendingAction;
+  if (!action) return;
+  if (action.type === 'start') doStart(action.machineId, tempNum);
+  else if (action.type === 'stop') doStop(action.sessionId, tempNum);
+  state.pendingAction = null;
+};
+
+async function doStart(machineId, tempStart) {
+  showLoading(true);
+  try {
+    const result = await call('api_startSession', machineId, tempStart);
+    if (result.success) { toast('✓ เปิดเครื่องแล้ว', 'success'); await refreshStatus(); }
+    else { toast(result.error || 'เปิดไม่สำเร็จ', 'error'); }
+  } catch (e) { toast('เชื่อมต่อไม่ได้', 'error'); }
+  finally { showLoading(false); }
+}
+
+async function doStop(sessionId, tempEnd) {
+  showLoading(true);
+  try {
+    const result = await call('api_endSession', sessionId, tempEnd);
+    if (result.success) { showSummary(result.summary); await refreshStatus(); }
+    else { toast(result.error || 'ปิดไม่สำเร็จ', 'error'); }
+  } catch (e) { toast('เชื่อมต่อไม่ได้', 'error'); }
+  finally { showLoading(false); }
+}
+
+function showSummary(s) {
+  document.getElementById('summary-machine').textContent = s.machineName;
+  let html = `<div class="summary-row"><span class="label">รัน</span><span class="value">${s.hours} ชม.</span></div>`;
+  if (s.machineType === 'tray') {
+    html += `<div class="summary-row"><span class="label">เที่ยว</span><span class="value">${s.rounds}</span></div>`;
+    html += `<div class="summary-row"><span class="label">ถุง</span><span class="value">${fmtNumber(s.bags)}</span></div>`;
+    html += `<div class="summary-row"><span class="label">น้ำหนัก</span><span class="value">${fmtNumber(s.weightKg)} กก.</span></div>`;
+  } else if (s.machineType === 'pond') {
+    if (s.tempStart !== null) html += `<div class="summary-row"><span class="label">อุณหภูมิเปิด</span><span class="value">${s.tempStart}°C</span></div>`;
+    if (s.tempEnd !== null) html += `<div class="summary-row"><span class="label">อุณหภูมิปิด</span><span class="value">${s.tempEnd}°C</span></div>`;
+  }
+  document.getElementById('summary-content').innerHTML = html;
+  showModal('modal-summary');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettings() {
+  const list = document.getElementById('settings-machines');
+  list.innerHTML = state.machines.map(m => {
+    let valueText;
+    if (m.type === 'ro') valueText = 'อัตโนมัติ';
+    else if (m.type === 'pond') valueText = 'เครื่องบ่อ';
+    else valueText = (m.minutesPerRound || '?') + ' นาที/เที่ยว';
+    return `
+      <div class="list-item" onclick="openEdit('${m.id}')">
+        <span class="list-label">${m.name}</span>
+        <span class="list-value">${valueText}<span class="list-chev">›</span></span>
+      </div>
+    `;
+  }).join('');
+}
+
+async function openEdit(machineId) {
+  showScreen('edit');
+  document.getElementById('edit-title').textContent = '...';
+  document.getElementById('edit-body').innerHTML = '<div class="empty">กำลังโหลด...</div>';
+  try {
+    const m = await call('api_getMachineDetail', machineId);
+    if (!m) { document.getElementById('edit-body').innerHTML = '<div class="empty">ไม่พบเครื่อง</div>'; return; }
+    document.getElementById('edit-title').textContent = m.name;
+    if (m.type === 'pond' || m.type === 'ro') {
+      const typeLabel = m.type === 'pond' ? 'เครื่องบ่อ' : 'RO (อัตโนมัติ)';
+      document.getElementById('edit-body').innerHTML = `
+        <div class="empty">${typeLabel}<br>
+          <span style="font-size:12px;">ไม่มีค่านาที/เที่ยว ถุง/เที่ยว ให้ตั้ง<br>การซ่อมบำรุง/อะไหล่ ตั้งค่าใน Google Sheet</span>
+        </div>`;
+      return;
+    }
+    const avgMinHtml = m.avgMinutesPerRound !== null
+      ? `<div class="form-hint">เฉลี่ย ${m.windowDays} วันล่าสุด: ${m.avgMinutesPerRound} นาที (${m.sampleSize} sessions)</div>
+         <span class="form-link" onclick="useAvg('min', ${m.avgMinutesPerRound})">ใช้ค่าเฉลี่ยจริง</span>`
+      : `<div class="form-hint">ยังไม่มีข้อมูลเฉลี่ย</div>`;
+    const avgBagsHtml = m.avgBagsPerRound !== null
+      ? `<div class="form-hint">เฉลี่ย ${m.windowDays} วันล่าสุด: ${m.avgBagsPerRound} ถุง</div>
+         <span class="form-link" onclick="useAvg('bags', ${m.avgBagsPerRound})">ใช้ค่าเฉลี่ยจริง</span>`
+      : `<div class="form-hint">ยังไม่มีข้อมูลเฉลี่ย</div>`;
+    document.getElementById('edit-body').innerHTML = `
+      <div class="form-group">
+        <label class="form-label">นาที/เที่ยว</label>
+        <input type="number" id="input-min" class="form-input" value="${m.minutesPerRound || ''}" inputmode="numeric" />
+        ${avgMinHtml}
+      </div>
+      <div class="form-group">
+        <label class="form-label">ถุง/เที่ยว</label>
+        <input type="number" id="input-bags" class="form-input" value="${m.bagsPerRound || ''}" inputmode="numeric" />
+        ${avgBagsHtml}
+      </div>
+      <button class="btn-primary" onclick="saveMachine('${m.id}')">บันทึก</button>
+    `;
+  } catch (e) {
+    toast('โหลดไม่สำเร็จ', 'error');
+    document.getElementById('edit-body').innerHTML = '<div class="empty">เกิดข้อผิดพลาด</div>';
+  }
+}
+
+function useAvg(field, val) {
+  document.getElementById(field === 'min' ? 'input-min' : 'input-bags').value = val;
+}
+
+async function saveMachine(machineId) {
+  const min = Number(document.getElementById('input-min').value);
+  const bags = Number(document.getElementById('input-bags').value);
+  if (!min || !bags || min <= 0 || bags <= 0) { toast('ใส่ตัวเลขให้ครบและมากกว่า 0', 'error'); return; }
+  showLoading(true);
+  try {
+    const result = await call('api_updateMachine', machineId, min, bags);
+    if (result.success) { toast('✓ บันทึกแล้ว', 'success'); await refreshStatus(); showScreen('settings'); }
+    else { toast(result.error || 'บันทึกไม่สำเร็จ', 'error'); }
+  } catch (e) { toast('เชื่อมต่อไม่ได้', 'error'); }
+  finally { showLoading(false); }
+}
+
+// ============================================================
+// LIVE TICK + AUTO POLL
+// ============================================================
+setInterval(() => {
+  if (document.getElementById('screen-home').classList.contains('active')) {
+    document.getElementById('current-time').textContent = fmtTime(getNow());
+    renderHome();
+  }
+}, 30000);
+
+setInterval(() => {
+  if (document.getElementById('screen-home').classList.contains('active') && !document.hidden) {
+    refreshStatus();
+  }
+}, 60000);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && document.getElementById('screen-home').classList.contains('active')) {
+    refreshStatus();
+  }
+});
+
+// ============================================================
+// ONLINE/OFFLINE
+// ============================================================
+function updateOnlineStatus() {
+  const banner = document.getElementById('offline-banner');
+  banner.classList.toggle('show', !navigator.onLine);
+  if (navigator.onLine && state.machines.length > 0) refreshStatus();
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ============================================================
+// SERVICE WORKER REGISTRATION
+// ============================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+refreshStatus();
+</script>
+</body>
+</html>
