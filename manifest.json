@@ -1,6 +1,6 @@
 {
-  "name": "โรงน้ำแข็ง",
-  "short_name": "โรงน้ำแข็ง",
+  "name": "โรงน้ำแข็งวังทิพย์",
+  "short_name": "วังทิพย์",
   "description": "ระบบเปิด-ปิดเครื่องน้ำแข็งและบันทึกค่า TDS",
   "start_url": "./",
   "display": "standalone",
