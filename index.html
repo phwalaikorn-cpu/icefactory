@@ -284,7 +284,6 @@ const state = {
 async function call(action, ...args) {
   if (!navigator.onLine) throw new Error('offline');
 
-  // Apps Script ไม่รองรับ CORS preflight — ใช้ form-urlencoded เพื่อให้เป็น "simple request"
   const formData = new URLSearchParams();
   formData.append('payload', JSON.stringify({ action, args }));
 
@@ -296,7 +295,10 @@ async function call(action, ...args) {
   });
 
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  return await res.json();
+  const data = await res.json();
+  console.log('[call]', action, '→', data);  // log response
+  return data;
+}
 }
 
 // ============================================================
