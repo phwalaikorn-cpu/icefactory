@@ -10,5 +10,4 @@
 //
 // ตัวอย่าง:
 // window.API_URL = 'https://script.google.com/macros/s/AKfycb.../exec';
-
 window.API_URL = 'https://script.google.com/macros/s/AKfycbxow3UByNHogrcQ5SOLmSttjuLBdbdSP3CcEfwVsCW-VMHupeMzXm0TPQ5YVwEj3PArwQ/exec';
