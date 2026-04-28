@@ -1,6 +1,6 @@
 // โรงน้ำแข็ง PWA — Service Worker
 // strategy: cache static assets, network-first for API
-const CACHE_NAME = 'icefactory-v2';
+const CACHE_NAME = 'icefactory-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
